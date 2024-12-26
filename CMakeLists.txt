@@ -11,6 +11,8 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/external/raylib)
 add_executable(${PROJECT_NAME}
 	src/main.c
 	src/flappy-box.c
+	src/components.c
+	src/entity.c
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE
