@@ -4,7 +4,8 @@
 #include "components.h"
 
 typedef struct {
-    ComponentArray bodies; // Rectangle
+	ComponentArray positions; // Vector2
+    ComponentArray sizes; // Vector2
     ComponentArray velocities; // Vector2
 	ComponentArray accelerations; // Vector2
 	ComponentArray rotations; // float

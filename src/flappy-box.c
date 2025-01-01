@@ -7,68 +7,84 @@
 
 void init_component_manager(ComponentManager* cm)
 {
-    INIT_C_ARRAY(&cm->bodies, Rectangle);
-    INIT_C_ARRAY(&cm->velocities, Vector2);
-	INIT_C_ARRAY(&cm->accelerations, Vector2);
-    INIT_C_ARRAY(&cm->rotations, float);
+    INIT_COMP_ARRAY(&cm->positions, Vector2);
+    INIT_COMP_ARRAY(&cm->sizes, Vector2);
+    INIT_COMP_ARRAY(&cm->velocities, Vector2);
+    INIT_COMP_ARRAY(&cm->accelerations, Vector2);
+    INIT_COMP_ARRAY(&cm->rotations, float);
 }
 void log_component_manager(const ComponentManager* cm)
 {
-	for (int i = 0; i < MAX_ENTITIES; i += 1) {
-		if (cm->bodies.active[i]) {
-			const Rectangle* body = GET_C_PTR(&cm->bodies, i, Rectangle);
-			printf("BODY #%d: x: %.2f, y: %.2f, w: %.2f, h: %.2f\n", i, body->x, body->y, body->width, body->height);
-		}
-		if (cm->velocities.active[i]) {
-			const Vector2* velocity = GET_C_PTR(&cm->velocities, i, Vector2);
-			printf("VELOCITY #%d: x: %.2f, y: %.2f\n", i, velocity->x, velocity->y);
-		}
-		if (cm->accelerations.active[i]) {
-			const Vector2* acceleration = GET_C_PTR(&cm->accelerations, i, Vector2);
-			printf("ACCELERATION #%d: x: %.2f, y: %.2f\n", i, acceleration->x, acceleration->y);
-		}
-		if (cm->rotations.active[i]) {
-			const float* rotation = GET_C_PTR(&cm->rotations, i, float);
-			printf("ROTATION #%d: %.2f\n", i, *rotation);
-		}
-	}
+    for (int i = 0; i < MAX_ENTITIES; i += 1) {
+        if (cm->positions.active[i]) {
+            const Vector2* position = GET_COMP_PTR(&cm->positions, i, Vector2);
+            printf("POSITION #%d: x: %.2f, y: %.2f\n", i, position->x, position->y);
+        }
+        if (cm->sizes.active[i]) {
+            const Vector2* size = GET_COMP_PTR(&cm->sizes, i, Vector2);
+            printf("SIZE #%d: x: %.2f, y: %.2f\n", i, size->x, size->y);
+        }
+        if (cm->velocities.active[i]) {
+            const Vector2* velocity = GET_COMP_PTR(&cm->velocities, i, Vector2);
+            printf("VELOCITY #%d: x: %.2f, y: %.2f\n", i, velocity->x, velocity->y);
+        }
+        if (cm->accelerations.active[i]) {
+            const Vector2* acceleration = GET_COMP_PTR(&cm->accelerations, i, Vector2);
+            printf("ACCELERATION #%d: x: %.2f, y: %.2f\n", i, acceleration->x, acceleration->y);
+        }
+        if (cm->rotations.active[i]) {
+            const float* rotation = GET_COMP_PTR(&cm->rotations, i, float);
+            printf("ROTATION #%d: %.2f\n", i, *rotation);
+        }
+    }
 }
 void free_component_manager(ComponentManager* cm)
 {
-	free_component_array(cm->bodies.data);
-	free_component_array(cm->velocities.data);
-	free_component_array(cm->accelerations.data);
-	free_component_array(cm->rotations.data);
+    free_component_array(cm->positions.data);
+    free_component_array(cm->sizes.data);
+    free_component_array(cm->velocities.data);
+    free_component_array(cm->accelerations.data);
+    free_component_array(cm->rotations.data);
 }
 void render_system(const ComponentManager* cm)
 {
     for (int i = 0; i < MAX_ENTITIES; i += 1) {
-        if (!cm->bodies.active[i])
+        // I am not planning to render a dot. Every object needs a size.
+        if (!cm->positions.active[i] || !cm->sizes.active[i])
             continue;
 
+        const Vector2* position = GET_COMP_PTR(&cm->positions, i, Vector2);
+        const Vector2* size = GET_COMP_PTR(&cm->sizes, i, Vector2);
+        Rectangle body = { position->x, position->y, size->x, size->y };
+
         if (cm->rotations.active[i]) {
-            DrawRectanglePro(*GET_C_PTR(&cm->bodies, i, Rectangle), (Vector2) { 0, 0 }, *GET_C_PTR(&cm->rotations, i, float), WHITE);
+            DrawRectanglePro(body, (Vector2) { 0, 0 }, *GET_COMP_PTR(&cm->rotations, i, float), WHITE);
         } else {
-            DrawRectanglePro(*GET_C_PTR(&cm->bodies, i, Rectangle), (Vector2) { 0, 0 }, 0.f, WHITE);
+            DrawRectanglePro(body, (Vector2) { 0, 0 }, 0.f, WHITE);
         }
     }
 }
 void update_system(ComponentManager* cm)
 {
     for (int i = 0; i < MAX_ENTITIES; i += 1) {
-        if (!cm->bodies.active[i])
+        // Skip updating if the object has no velocity.
+        // I will not update a object that I will not render.
+        if (!cm->positions.active[i] || !cm->sizes.active[i] || !cm->velocities.active[i])
             continue;
 
-        if (!cm->velocities.active[i])
-            continue;
+        const Vector2* position = GET_COMP_PTR(&cm->positions, i, Vector2);
+        const Vector2* velocity = GET_COMP_PTR(&cm->velocities, i, Vector2);
 
-        const Rectangle* body = GET_C_PTR(&cm->bodies, i, Rectangle);
-		const Vector2* velocity = GET_C_PTR(&cm->velocities, i, Vector2);
-		const Vector2* acceleration = GET_C_PTR(&cm->accelerations, i, Vector2);
+        Vector2 new_position = { position->x + velocity->x, position->y + velocity->y };
+        set_component(&cm->positions, i, &new_position);
 
-		SET_C(&cm->bodies, i, Rectangle, { body->x + velocity->x, body->y + velocity->y, body->width, body->height }); 
-		SET_C(&cm->velocities, i, Vector2, { velocity->x + acceleration->x, velocity->y + acceleration->y });
-	}
+        if (cm->accelerations.active[i]) {
+            const Vector2* acceleration = GET_COMP_PTR(&cm->accelerations, i, Vector2);
+
+            Vector2 new_velocity = { velocity->x + acceleration->x, velocity->y + acceleration->y };
+            set_component(&cm->velocities, i, &new_velocity);
+        }
+    }
 }
 void run_flappy_box()
 {
@@ -77,12 +93,13 @@ void run_flappy_box()
 
     // Create box
     Entity box = create_entity();
-    SET_C(&cm.bodies, box, Rectangle, { 0.f, 0.f, 20.f, 20.f });
-	SET_C(&cm.velocities, box, Vector2, { 0.f, 0.f });
-	SET_C(&cm.accelerations, box, Vector2, { 0.f, GRAVITY });
-	SET_C(&cm.rotations, box, float, { 0.f });
+    SET_COMP(&cm.positions, box, Vector2, { 0.f, 0.f });
+	SET_COMP(&cm.sizes, box, Vector2, { 20.f, 20.f });
+    SET_COMP(&cm.velocities, box, Vector2, { 0.f, 0.f });
+    SET_COMP(&cm.accelerations, box, Vector2, { 0.f, GRAVITY });
+    SET_COMP(&cm.rotations, box, float, { 0.f });
 
-	log_component_manager(&cm);
+    log_component_manager(&cm);
 
     while (!WindowShouldClose()) {
         BeginDrawing();
@@ -94,5 +111,4 @@ void run_flappy_box()
 
         update_system(&cm);
     }
-
 }

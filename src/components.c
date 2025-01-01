@@ -3,24 +3,24 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define data(entity) ((char*)component_array->data + entity * component_array->component_size)
+#define DATA(ca, entity) ((char*)ca->data + entity * ca->component_size)
 
-void init_component_array(ComponentArray* component_array, size_t component_size)
+void init_component_array(ComponentArray* ca, size_t component_size)
 {
-    component_array->data = malloc(MAX_ENTITIES * component_size);
-    component_array->component_size = component_size;
-    memset(component_array->active, false, sizeof(component_array->active));
+    ca->data = malloc(MAX_ENTITIES * component_size);
+    ca->component_size = component_size;
+    memset(ca->active, false, sizeof(ca->active));
 }
-void free_component_array(ComponentArray* component_array)
+void free_component_array(ComponentArray* ca)
 {
-	free(component_array->data);
+	free(ca->data);
 }
-const void* get_component(const ComponentArray* component_array, Entity entity)
+const void* get_component(const ComponentArray* ca, Entity entity)
 {
-    return (void*)data(entity);
+    return (void*)DATA(ca, entity);
 }
-void set_component(ComponentArray* component_array, Entity entity, const void* ptr)
+void set_component(ComponentArray* ca, Entity entity, const void* ptr)
 {
-    memcpy(data(entity), ptr, component_array->component_size);
-    component_array->active[entity] = true;
+    memcpy(DATA(ca, entity), ptr, ca->component_size);
+    ca->active[entity] = true;
 }
