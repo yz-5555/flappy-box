@@ -1,8 +1,7 @@
 #include "entity.h"
 
-Entity create_entity()
-{
-	static Entity next_entity = 0;
+Entity create_entity() {
+    static Entity next_entity = 0;
 
-	return next_entity++;
+    return next_entity++;
 }

@@ -3,3 +3,4 @@ build/
 
 CMakePresets.json
 compile_commands.json
+.clang-format
